@@ -1,0 +1,14 @@
+
+Sol ID : 12771050
+Sol stock costs: 0.0
+Sol routing costs: 0.0
+Sol total costs: 0.0
+Sol profit: 0.0
+Sol Expected profit: 0.0
+Sol run time: 0.0
+# of routes in sol: 0
+
+
+List of routes (cost and nodes): 
+
+runTime	0,000000

@@ -1,0 +1,26 @@
+
+Sol ID : 82521
+Sol stock costs: 0.0
+Sol routing costs: 126.16282869378801
+Sol total costs: 100.21064747380419
+Sol profit: 165.0
+Sol Expected profit: 165.0
+Sol run time: 0.0
+# of routes in sol: 4
+
+
+List of routes (cost and nodes): 
+
+Route 1 || Total Costs = 17.482160682415937 || Demand  = 0.0 || Score  = 35.0 || 
+
+0  - 12  - 1  - 2  - 6  - 5  - 31
+Route 2 || Total Costs = 17.71657106729399 || Demand  = 0.0 || Score  = 55.0 || 
+
+0  - 26  - 30  - 25  - 19  - 20  - 18  - 31
+Route 3 || Total Costs = 18.140517248928784 || Demand  = 0.0 || Score  = 35.0 || 
+
+0  - 11  - 10  - 9  - 7  - 31
+Route 4 || Total Costs = 17.803201636354125 || Demand  = 0.0 || Score  = 40.0 || 
+
+0  - 27  - 16  - 14  - 17  - 31
+runTime	0,000000

@@ -1,0 +1,26 @@
+
+Sol ID : 254971
+Sol stock costs: 0.0
+Sol routing costs: 160.1862988745704
+Sol total costs: 181.59367982791684
+Sol profit: 210.0
+Sol Expected profit: 210.0
+Sol run time: 0.495623052
+# of routes in sol: 4
+
+
+List of routes (cost and nodes): 
+
+Route 1 || Total Costs = 20.96625568125493 || Demand  = 0.0 || Score  = 60.0 || 
+
+0  - 19  - 20  - 11  - 10  - 9  - 7  - 8  - 12  - 31
+Route 2 || Total Costs = 20.65584233584413 || Demand  = 0.0 || Score  = 50.0 || 
+
+0  - 27  - 28  - 16  - 14  - 17  - 31
+Route 3 || Total Costs = 20.600557109986035 || Demand  = 0.0 || Score  = 40.0 || 
+
+0  - 4  - 2  - 1  - 6  - 5  - 31
+Route 4 || Total Costs = 21.02099732720162 || Demand  = 0.0 || Score  = 60.0 || 
+
+0  - 26  - 30  - 25  - 22  - 21  - 18  - 31
+runTime	0,495623

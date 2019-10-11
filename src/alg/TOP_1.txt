@@ -1,0 +1,173 @@
+package alg;
+
+import ilog.concert.IloException;
+import ilog.concert.IloLinearNumExpr;
+import ilog.concert.IloNumVar;
+import ilog.cplex.IloCplex;
+
+public class TOP {
+	public static void solveMe(Inputs inp, Test t) {
+		int V=inp.getVehNumber(); // set of vehicles
+		int k=t.getLongSim()+1; // set of scenarios
+		int n=inp.getNodes().length; //sset of node
+		//Traveling time
+		double [][][]TV= new double [n][n][k];
+		for(Edge e:inp.getedgeList()) {
+			int indexI=e.getOrigin().getId();
+			int indexJ=e.getEnd().getId();
+			for(int i=0;i<e.getStchTV().size();i++) {
+				double tv=e.getStchTV().get(i);
+				TV[indexI][indexJ][i]=tv;
+			}
+		}
+
+		//Rewards
+		double []U= new double [n];
+		for(int i=0; i<n;i++) {
+			Node IDnode=inp.getNodes()[i];
+			U[i]=IDnode.getProfit();}
+
+		//model
+		try {
+			IloCplex cplex= new IloCplex();
+			//variables
+			IloNumVar[][][] x= new IloNumVar[n][n][V];
+			for(int i=0;i<n;i++){
+				for(int j=0;j<n;j++){	
+					x[i][j]=cplex.boolVarArray(V);
+				}
+			}
+			IloNumVar[][] w=new IloNumVar[n][V];
+			for(int i=0;i<n;i++){
+				w[i]=cplex.numVarArray(V, 0,Double.MAX_VALUE);
+			}
+
+			// OBJECTIVE
+			IloLinearNumExpr obj = cplex.linearNumExpr();
+			for(int i=0; i<n;i++) {
+				for(int j=0;j<n;j++ ) {
+					if(i!=j) {
+						for(int d=0;d<inp.getVehNumber();d++ ) {
+							obj.addTerm(U[i]/t.getLongSim(), x[i][j][d]);
+						}
+					}
+				}
+			}
+			cplex.addMaximize(obj);
+
+			//constraints
+
+			//1. cust_depot(d)..sum((i,j)$(ord(i)>1 and ord(i)<end and ord(j)=end),X(i,j,d))=l=1;
+			for(int d=0;d<inp.getVehNumber();d++) {
+				IloLinearNumExpr expr = cplex.linearNumExpr();
+				for(int i= 1; i<(n-1);i++) {
+					expr.addTerm(1.0, x[i][(n-1)][d]);
+				}
+				cplex.addLe(expr,1.0);
+			}
+
+
+
+			//2.origen_cust(d)..sum((j)$(ord(j)>1 and ord(j)<end),X('1',j,d))=l=1;  
+			for(int d=0;d<inp.getVehNumber();d++) {
+				IloLinearNumExpr expr2 = cplex.linearNumExpr();
+				for(int j= 1; j<(n-1);j++) {
+					expr2.addTerm(1.0, x[0][(j)][d]);
+				}
+				cplex.addLe(expr2,1.0);
+			}
+
+			//3. flow(o,d)$(ord(o)<>1 and ord(o)<>end)..sum(i,X(i,o,d))=e=sum(j,X(o,j,d)); 
+			for(int d=0;d<inp.getVehNumber();d++) {
+				for(int o=1; o<(n-1);o++) {
+					IloLinearNumExpr expr3 = cplex.linearNumExpr();
+					for(int i= 1; i<n;i++) {
+						for(int j= 1; j<n;j++) {
+							if(i!=o && j!=o) {
+								expr3.addTerm(1.0, x[i][o][d]);
+								expr3.addTerm(-1.0, x[o][j][d]);
+
+							}
+						}
+					}
+					cplex.addEq(expr3, 0);
+				}
+			}
+			//4. end_route(i,j,d)$( ord(i)=end)..X(i,j,d)=e=0;          
+			for(int d=0;d<inp.getVehNumber();d++) {
+				for(int j= 0; j<n;j++) {
+					IloLinearNumExpr expr4 = cplex.linearNumExpr();
+					expr4.addTerm(1.0, x[(n-1)][j][d]);
+					cplex.addEq(expr4, 0);
+				}
+			}
+
+			//5. star_route(i,j,d)$(ord(j)=1)..X(i,j,d)=e=0;                  
+			for(int d=0;d<inp.getVehNumber();d++) {
+				for(int i= 0; i<n;i++) {
+					IloLinearNumExpr expr5 = cplex.linearNumExpr();
+					expr5.addTerm(1.0, x[i][0][d]);
+					cplex.addEq(expr5, 0.0);
+				}
+			}
+
+
+			//6. segment_origen(d,i)$(ord(i)<>end)..sum(j$(ord(j)<>1),X(i,j,d))=l=1;        
+
+			for(int d=0;d<inp.getVehNumber();d++) {
+				for(int i= 0; i<(n-1);i++) {
+					IloLinearNumExpr expr6 = cplex.linearNumExpr();
+					for(int j= 1; j<n;j++) {
+						expr6.addTerm(1.0, x[i][j][d]);
+					}
+					cplex.addLe(expr6, 1);
+				}
+			}
+//7. segment_end(d,j)$(ord(j)<>1)..sum(i$(ord(i)<>end),X(i,j,d))=l=1; 
+			for(int d=0;d<inp.getVehNumber();d++) {
+				for(int j= 1; j<n;j++) {
+					IloLinearNumExpr expr7 = cplex.linearNumExpr();
+					for(int i= 1; i<(n-1);i++) {
+						expr7.addTerm(1.0, x[i][j][d]);
+					}
+					cplex.addLe(expr7, 1);
+				}
+			}
+		// 8. Subtour(i,j,d)$(ord(i)>1 and ord(i)<end and ord(j)>1 and ord(j)<end).. U(i,d)-U(j,d)+(card(i)*X(i,j,d))=l=card(i)-1;  	
+			for(int d=0;d<inp.getVehNumber();d++) {
+			for(int i=0;i<n;i++) {
+				for(int j= 0; j<0;j++) {
+					IloLinearNumExpr expr8 = cplex.linearNumExpr();
+					
+						expr8.addTerm(1.0, w[i][d]);
+						expr8.addTerm(-1.0, w[j][d]);
+						expr8.addTerm(n-1, x[i][j][d]);
+						cplex.addLe(expr8, n-2);
+					
+				}
+			}
+			}
+			
+			/*SOLVING*/
+			if (cplex.solve()) {
+				System.out.println("obj = "+cplex.getObjValue());
+				for (int i=0; i<n; i++){
+					for (int j=0; j<n; j++){
+						for (int d=0; d<V; d++){
+							if (i!=j && cplex.getValue(x[i][j][d])>0.9999) {
+								System.out.println(i+","+j+","+d);
+							}}
+					}
+				}
+			}
+			else {
+				System.out.println("Model not solved");
+			};
+			cplex.end();	
+
+		}
+		catch(IloException e) {
+			e.printStackTrace();
+		}
+	}
+}

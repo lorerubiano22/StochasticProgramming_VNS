@@ -1,0 +1,2 @@
+TypeExec	Instance	Seed	Profit StoProfit	Reliability	RunTime
+Sto	p1.2.a	1026001	0,00	0,00	1,00	0,00
