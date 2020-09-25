@@ -35,7 +35,7 @@ public class VNS {
 	 * @return The best solution found by VNS
 	 */
 	public Solution solveDet(){
-		for(int scenario=0;scenario<2;scenario++  ) { // aca es donde se va a iterar sobre cada simulción
+		for(int scenario=0;scenario<aTest.getLongSim();scenario++  ) { // aca es donde se va a iterar sobre cada simulción
 			//	for(int scenario=0;scenario<aTest.getLongSim();scenario++  ) { // aca es donde se va a iterar sobre cada simulción
 			//	int scenario=0; // to remove
 			long start = ElapsedTime.systemTime();
@@ -54,28 +54,31 @@ public class VNS {
 				int p = P_MIN;
 				T = 100;
 				while(p <= P_MAX){
-					if(p==51) {
+					if(p==51 && elapsed==22.3721493) {
 						System.out.println("Stop");
 					}
 					newSol = new Solution(shake(baseSolution,p,scenario ));
 					if(newSol.getTotalCosts()<0) {
 						System.out.println("To check new Sol" +"iteration" + p + bestSolution.getTotalScore()+ " "+newSol.getTotalCosts());
-						
+
 					}
 					newSol = new Solution(routecache.improve(newSol));
+					//checkingDistances(newSol);
 					if(newSol.getTotalCosts()<0) {
 						System.out.println("To check new Sol" +"iteration" + p + bestSolution.getTotalScore()+ " "+newSol.getTotalCosts());
-						
+
 					}
 					newSol = new Solution(LocalSearch2(newSol));
+					//	checkingDistances(newSol);
 					if(newSol.getTotalCosts()<0) {
 						System.out.println("To check new Sol" +"iteration" + p + bestSolution.getTotalScore()+ " "+newSol.getTotalCosts());
-						
+
 					}
 					newSol = new Solution(LocalSearch4(newSol));
+					//		checkingDistances(newSol);
 					if(newSol.getTotalCosts()<0) {
 						System.out.println("To check new Sol" +"iteration" + p + bestSolution.getTotalScore()+ " "+newSol.getTotalCosts());
-						
+
 					}
 					if(hasImproved(newSol)){
 						bestSolution = new Solution(newSol);
@@ -83,7 +86,7 @@ public class VNS {
 							System.out.println("To check bestSolution" +"iteration" + p + bestSolution.getTotalScore()+ " "+newSol.getTotalCosts());
 						}
 						baseSolution = new Solution(newSol);
-						
+
 						bestSolution.setTime(elapsed);
 						System.out.println("I improved " + bestSolution.getTotalScore()+ " "+bestSolution.getTotalCosts());
 						p = P_MIN;
@@ -263,14 +266,43 @@ public class VNS {
 		Solution subSol = CWS.solve(subInput,aTest,this.rng,1);
 		routes.addAll(subSol.getRoutes());
 		mergeNotUsedNodes(ShakeSol,subSol);
-
+		//	checkingDistances(subSol);
 		/* Merge baseSolution and subSolution and slice routes not used*/
 
 		ShakeSol.sliceSolutionAndSetCost(inputs);
-
+		//	checkingDistances(ShakeSol);
+		System.out.println("shake");
 		return ShakeSol;
+
 	}
 
+
+	private void checkingDistances(Solution shakeSol) {
+		// 1. Llamar las rutas de la solución 
+		int route=-1;
+		double computedSolCost=0;
+		for(Route r:shakeSol.getRoutes()) {
+			route++;
+			// 2. Llamar los ejes de cada ruta
+			double distRoute=0;
+			for(Edge e:r.getEdges()) {
+				// 3. Calcular la distancia de cada ruta
+				distRoute+=e.getCosts();
+			}
+			// 4. Verificar que todo coincida
+			System.out.println("Route_"+route+" distance compute "+distRoute+" current route distance "+ r.getCosts());		
+			// 5. solution cost
+			computedSolCost+=distRoute;
+			if(Math.round(distRoute)!=Math.round(r.getCosts())) {
+				System.out.println("Route Cost_wrong");
+			}	
+		}
+
+		System.out.println("Solution Cost_"+ "computed cost "+computedSolCost+" current route distance "+ shakeSol.getTotalCosts());	
+		if(computedSolCost!=shakeSol.getTotalCosts()) {
+			System.out.println("Solution Cost_wrong");
+		}	
+	}
 
 	private void generateSavingsList(Inputs subInput, double alpha, Test aTest2, int scenario) {
 		// 2. compute los savings para cada eje
@@ -498,9 +530,9 @@ public class VNS {
 						LsSolution.getNotUsedNodes().add(edgeIni.getEnd());	
 						r.setClientsServed(r.getEdges().size()-1); //Customers visitados en la ruta
 
-						LsSolution.setTotalScore(r.getScore() + LsSolution.getTotalScore() - lastScoreRoute); //Actualizo score de la sol
-						LsSolution.setTotalCosts(LsSolution.getTotalCosts() - routeCost  + r.getCosts()); //Actualizo cost de la sol (viaje + tiempo de servicio nodo)				
-
+						//LsSolution.setTotalScore(r.getScore() + LsSolution.getTotalScore() - lastScoreRoute); //Actualizo score de la sol
+						//LsSolution.setTotalCosts(LsSolution.getTotalCosts() - routeCost  + r.getCosts()); //Actualizo cost de la sol (viaje + tiempo de servicio nodo)				
+						LsSolution.sliceSolutionAndSetCost(inputs);
 						if(ndeleted == nodesToDelete){
 							stopped = true;
 						}
@@ -513,6 +545,7 @@ public class VNS {
 		}
 
 		AuxSolLS = new Solution(routecache.improve(LsSolution)); 
+		System.out.println("LocalSearch2");
 		return AuxSolLS;
 	}
 
@@ -531,7 +564,7 @@ public class VNS {
 		Solution LsSolution = new Solution(AuxSolLS);
 		Solution BaseSol = new Solution(AuxSolLS);
 		Boolean improve = true;
-
+		//checkingDistances(LsSolution);
 		while(improve == true){
 			for(Route r : LsSolution.getRoutes()){
 				for(int i = 0;i<r.getEdges().size();i++){
@@ -552,32 +585,47 @@ public class VNS {
 					PairBest b = MultiStart.obtainDistanceNode(index,vectDist);	 
 
 					if(merge(r,edge,b.getvalue())){
+						// información de la ruta
+						double lastScoreRoute = r.getScore();
+						double lastDistance=r.getCosts();
+						// información de la solución
+						double lastScoreSol = LsSolution.getTotalScore()-lastScoreRoute;
+						double lastDistanceSol=LsSolution.getTotalCosts()-lastDistance;
+						// setting information of solution
+						LsSolution.setTotalScore(lastScoreSol); //Actualizo score de la sol
+						LsSolution.setTotalCosts(lastDistanceSol); //Actualizo cost de la sol (viaje + tiempo de servicio nodo)
 
+
+
+
+						// route
 						int  position = r.getEdges().indexOf(edge); //Posicion del edge en la routa
 						r.getEdges().remove(edge); //Borro el egde de la ruta
 						//System.out.println("Mejoraaaa LS");
 
 						//P -> J
 						Edge pjEdge = inputs.getEdge(edge.getOrigin(), b.getvalue());
-						//pjEdge.setCosts(pjEdge.calcCosts(edge.getOrigin(), b.getvalue()));
 						r.getEdges().add(position, pjEdge);
 
+						//System.out.println("Route_"+ r.toString());	
+						//	r.addCosts(pjEdge);
 						// System.out.println(b.getvalue().getProfit() + " " + route.getScore());
-						double lastScoreRoute = r.getScore();
+
 						r.setScore(b.getvalue().getProfit() + r.getScore()); //Sumo score
 
 						//J -> Q
 						Edge jqEdge = inputs.getEdge(b.getvalue(), edge.getEnd());
-
 						r.getEdges().add(position + 1, jqEdge);
-
 						r.setClientsServed(r.getEdges().size()-1); //Customers visitados en la ruta
+						//System.out.println("Route_"+ r.toString());	
 
-						LsSolution.setTotalScore(r.getScore() + LsSolution.getTotalScore() - lastScoreRoute); //Actualizo score de la sol
-						LsSolution.setTotalCosts(LsSolution.getTotalCosts() + r.getCosts()); //Actualizo cost de la sol (viaje + tiempo de servicio nodo)
+
+						// computing Distances Route
+						computeDistanceScoreRoute(r);
+						LsSolution.sliceSolutionAndSetCost(inputs);
 
 						LsSolution.getNotUsedNodes().remove(b.getvalue());	
-
+						//checkingDistances(LsSolution);
 						if( (LsSolution.getTotalScore() > AuxSolLS.getTotalScore()) ||
 								( (LsSolution.getTotalScore() == AuxSolLS.getTotalScore()) && (LsSolution.getTotalCosts() < AuxSolLS.getTotalCosts()))){
 							AuxSolLS = new Solution(routecache.improve(LsSolution)); 
@@ -593,6 +641,22 @@ public class VNS {
 			}else{improve = false;}
 		}
 		return AuxSolLS;
+	}
+
+	private void computeDistanceScoreRoute(Route r) {
+		double distRoute=0;
+		double score=r.getEdges().get(0).getOrigin().getProfit();
+		for(Edge e:r.getEdges()) {
+			// 3. Calcular la distancia de cada ruta
+			distRoute+=e.getCosts();
+			score+=e.getEnd().getProfit();
+		}
+		// 4. Verificar que todo coincida
+
+		System.out.println("LocalSearch4");		
+		r.setScore(score);
+		r.setCosts(distRoute);		
+		System.out.println("Route_"+" distance compute "+distRoute+" current route distance "+ r.getCosts());	
 	}
 
 

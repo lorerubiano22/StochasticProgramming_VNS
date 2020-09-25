@@ -103,6 +103,9 @@ public class RouteCache {
 				}
 			}
 		}		
+		
+	//	newRoutingSol.sliceSolutionAndSetCost(inputs);
+		System.out.println("improve");
 		return new Solution(newRoutingSol);		
 	}
 

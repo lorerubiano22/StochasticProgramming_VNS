@@ -100,7 +100,7 @@ for(Route r:currentSol.getRoutes()) {
 		distance+=e.getCosts();
 		System.out.println("Distance ejes"+e.getCosts());
 	}
-	System.out.println("Checking operational cost_ Computing distance" + r.ge);
+	System.out.println("Checking operational cost_ Computing distance" + r.getCosts());
 }
 				}
 			}
