@@ -37,9 +37,7 @@ public class TestsManager
                         int longSim = in.nextInt(); // seed for the RNG
                         float var = in.nextFloat();
                         boolean exe  = in.nextBoolean();
-                        int BKS=in.nextInt(); // BKS usada para como criterio de parada para que no siga buscando mejores soluciones y reporte el tiempo que necesita para alcanzar esa solución
-                        //Test aTest = new Test(instanceName,maxTime, beta1, seed,shortSim,longSim,var,exe);
-                        Test aTest = new Test(instanceName,maxTime, beta1, seed,shortSim,longSim,var,exe,BKS);
+                        Test aTest = new Test(instanceName,maxTime, beta1, seed,shortSim,longSim,var,exe);
                         list.add(aTest);
                     }
                }

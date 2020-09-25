@@ -18,16 +18,11 @@ public class Test
     private int longSim; //long simulations
     private float variance;
     private boolean modeExe;
-    private int benchmark;
 
 
 
 
-	
-
-
-
-	public Test(String name,  float t,  float p1, int s, int sm, int ls,float var, boolean exe, int BKS)
+	public Test(String name,  float t,  float p1, int s, int sm, int ls,float var, boolean exe)
     {
         instanceName = name;
         maxTime = t;
@@ -37,7 +32,6 @@ public class Test
         longSim = ls;
         variance = var;
         modeExe = exe;
-        benchmark=BKS;
     }
 
 	
@@ -49,7 +43,6 @@ public class Test
     public int getSeed(){return seed;}
     public RandomStream getRandomStream() {return rng;}
     public int getLongSim() {return longSim;}
-    public int getBKS() {return benchmark;}
 	public int getShortSim() {return shortSim;}
 	public float getVariance() {return variance;}
 	public boolean isModeExe() {return modeExe;}
@@ -61,8 +54,6 @@ public class Test
 	public void setRandomStream(RandomStream stream) {rng = stream;}
 	public void setLongSim(int longSim) {this.longSim = longSim;}
 	public void setShortSim(int shortSim) {this.shortSim = shortSim;}
-	public void setbks(int bk) {this.benchmark = bk;}
-	
 	public void setVariance(float variance) {this.variance = variance;}
 	public void setMaxTime(float maxTime) {this.maxTime = maxTime;}
     

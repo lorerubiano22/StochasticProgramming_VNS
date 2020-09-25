@@ -19,9 +19,12 @@ import java.util.List;
 
 public class RouteCache {
 	private final HashMap<String, Route> routes;
-
-	public RouteCache() {
+	private static Inputs inputs;
+			
+			
+	public RouteCache(Inputs inputs) {
 		this.routes = new HashMap<String, Route>();
+		this.inputs=inputs;
 	}
 
 	public boolean isCached(Route route) {
@@ -133,12 +136,11 @@ public class RouteCache {
 				Node originE2 = e2.getOrigin();
 				Node endE2 = e2.getEnd();
 				Node endE3 = e3.getEnd();
-				Edge e1b = new Edge(originE1, endE2);
-				e1b.setCosts(e1b.calcCosts(originE1, endE2));
-				Edge e2b = new Edge(endE2, originE2);
-				e2b.setCosts(e2b.calcCosts(endE2, originE2));
-				Edge e3b = new Edge(originE2, endE3);
-				e3b.setCosts(e3b.calcCosts(originE2, endE3));
+				//inputs
+				Edge e1b = inputs.getEdge(originE1, endE2);
+				Edge e2b = inputs.getEdge(endE2, originE2);
+				Edge e3b = inputs.getEdge(originE2, endE3);
+
 
 				double alterCosts = e1b.getCosts() + e2b.getCosts() + e3b.getCosts();
 				// Compare both ways and, if appropriate, update route

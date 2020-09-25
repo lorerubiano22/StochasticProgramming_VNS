@@ -1,5 +1,6 @@
 package alg;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 
@@ -9,67 +10,76 @@ import java.util.PriorityQueue;
  */
 public class Inputs implements Serializable
 {
-    /* INSTANCE FIELDS & CONSTRUCTOR */
-    private Node[] nodes; // List of all nodes in the problem/sub-problem
-    private int vehicles = 0; // Vehicle capacity (homogeneous fleet)
-    private LinkedList<Edge> savings = null; 
-    private LinkedList<Edge> edgeList = null;
-    private LinkedList<Edge> depotDistance = null; //Distance depot with customers 
-    private float[] vrpCenter; // (x-bar, y-bar) is a geometric VRP center
-    private double alpha = 0.0;
-    private double beta = 0.0;
-    private double tMax; //Maximum time of travel
-    private double maxprofit;
-    private double minprofit;
+	/* INSTANCE FIELDS & CONSTRUCTOR */
+	private Node[] nodes; // List of all nodes in the problem/sub-problem
+	private int vehicles = 0; // Vehicle capacity (homogeneous fleet)
+	private LinkedList<Edge> savings = null; 
+	private LinkedList<Edge> depotDistance = null; //Distance depot with customers 
+	private HashMap<String,Edge> edgesDirectory = new HashMap<>(); //Distance depot with customers 
+	private HashMap<Integer,LinkedList<Edge>> savingListScenario = new HashMap<>(); //Distance depot with customers 
+	private float[] vrpCenter; // (x-bar, y-bar) is a geometric VRP center
+	private double alpha = 0.0;
+	private double beta = 0.0;
+	private double tMax; //Maximum time of travel
+	private double maxprofit;
+	private double minprofit;
 
 
 
 
 	public Inputs(int n)
-    {   nodes = new Node[n]; // n nodes, including the depot
-        vrpCenter = new float[2];
-    }
+	{   nodes = new Node[n]; // n nodes, including the depot
+	vrpCenter = new float[2];
+	}
 
-    public Inputs(Inputs i, Node[] nodes){
-	    this.nodes = nodes;
-	    vehicles = i.vehicles;
-	    tMax = i.tMax;
-    }
+	public Inputs(Inputs i, Node[] nodes){
+		this.nodes = nodes;
+		vehicles = i.vehicles;
+		tMax = i.tMax;
+	}
 
-    /* GET METHODS */
-    public Node[] getNodes(){return nodes;}
-    public LinkedList<Edge> getSavings(){return savings;}
-    public LinkedList<Edge> getedgeList(){return edgeList;}
-    public int getVehNumber(){return vehicles;}
-    public float[] edgeList(){return vrpCenter;}
-    public double gettMax() {return tMax;}
-    public double getMaxprofit() {return maxprofit;}
-    public double getMinprofit() {return minprofit;}
-    public LinkedList<Edge> getdistanceDepot(){return depotDistance;}
-    
-    /* SET METHODS */
-    public void setVrpCenter(float[] center){vrpCenter = center;}
-    public void setVehNumber(int c){vehicles = c;}
-    public void setNodes(Node[] nodes){this.nodes = nodes;}
-    public void setList(LinkedList<Edge> sList){savings = sList;}
+	/* GET METHODS */
+	public Node[] getNodes(){return nodes;}
+	public LinkedList<Edge> getSavings(){return savings;}
+
+	public int getVehNumber(){return vehicles;}
+	public float[] getVrpCenter(){return vrpCenter;}
+	public double gettMax() {return tMax;}
+	public double getMaxprofit() {return maxprofit;}
+	public double getMinprofit() {return minprofit;}
+	public LinkedList<Edge> getdistanceDepot(){return depotDistance;}
+	public HashMap<String,Edge> getEdgesDirectory(){return edgesDirectory;}
+	public HashMap<Integer,LinkedList<Edge>> getSavingsDirectory(){return savingListScenario;}
+	
+	
+	public Edge getEdge(Node origen, Node end){
+		String key=origen.getId()+","+end.getId();
+		return edgesDirectory.get(key);}
+
+	
+	/* SET METHODS */
+	public void setVrpCenter(float[] center){vrpCenter = center;}
+	public void setVehNumber(int c){vehicles = c;}
+	public void setNodes(Node[] nodes){this.nodes = nodes;}
+	public void setList(LinkedList<Edge> sList){savings = sList;}
 	public void settMax(double tMax) {this.tMax = tMax;}	
 	public void setdistanceDepot(LinkedList<Edge> sList){depotDistance = sList;}
-	public void setEdgeList(LinkedList<Edge> sList) {edgeList = sList;}
+
 	public void setMaxMin()
 	{
-	    maxprofit=0;
-	    minprofit=10^6;
-	    for(int j=1; j< nodes.length-1; j++) 
-	    {
-	    	if(nodes[j].getProfit() > maxprofit) 
-	    	{
-	    		maxprofit=nodes[j].getProfit();
-	    	}
-	    	if(nodes[j].getProfit() < minprofit) 
-	    	{
-	    		minprofit=nodes[j].getProfit();
-	    	}	
-	    }
+		maxprofit=0;
+		minprofit=10^6;
+		for(int j=1; j< nodes.length-1; j++) 
+		{
+			if(nodes[j].getProfit() > maxprofit) 
+			{
+				maxprofit=nodes[j].getProfit();
+			}
+			if(nodes[j].getProfit() < minprofit) 
+			{
+				minprofit=nodes[j].getProfit();
+			}	
+		}
 	}
 	public void remove(int index){
 		Node[] nNode=new Node[getNodes().length-1];
@@ -91,6 +101,4 @@ public class Inputs implements Serializable
 		}
 	}
 
-	
-	
 }

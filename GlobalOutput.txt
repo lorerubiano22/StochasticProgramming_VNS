@@ -1,5 +1,17 @@
-p1.2.a
-Coste total Solution: 0,000000 
-Profit total Solution: 0,000000 
+p1.4.m
+Ruta: 0 Coste ruta: 3,977184
+        Profit ruta: 50,000000
+0 -- 3 -- 4 -- 7 -- 27 -- 16 -- 17 -- 
+Ruta: 1 Coste ruta: -1,485015
+        Profit ruta: 65,000000
+0 -- 18 -- 10 -- 8 -- 1 -- 2 -- 6 -- 5 -- 14 -- 
+Ruta: 2 Coste ruta: -9,135657
+        Profit ruta: 15,000000
+0 -- 12 -- 26 -- 
+Ruta: 3 Coste ruta: 7,039071
+        Profit ruta: 90,000000
+0 -- 19 -- 25 -- 21 -- 20 -- 9 -- 11 -- 30 -- 29 -- 28 -- 
+Coste total Solution: 0,395583 
+Profit total Solution: 220,000000 
 
 

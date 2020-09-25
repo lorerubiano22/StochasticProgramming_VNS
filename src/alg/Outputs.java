@@ -127,26 +127,6 @@ public class Outputs
 		catch(IOException exception){
 			System.out.println("Error processing output file: " + exception);
 		}
-		//Lorena: Script with routes per instance
-
-		try 
-		{   
-			for(Outputs o : list){
-				Solution sol = o.getOBSol();
-				PrintWriter out = new PrintWriter("./outputs/"+o.getInstanceName()+"_Variance_"+o.getK()+"_#UAVs_"+sol.getRoutes().size()+"_Det_"+o.isExe()+"_Output.txt");
-				out.print(sol.toString());
-				//out.printf("Det SOl	%f");
-				//out.print(solDet.toString());
-				out.printf("runTime	%f",sol.getTime());
-				
-				out.println();
-				out.close();
-			}
-
-		}
-		catch(IOException exception){
-			System.out.println("Error processing output file: " + exception);
-		}
 	}//end method
     
   

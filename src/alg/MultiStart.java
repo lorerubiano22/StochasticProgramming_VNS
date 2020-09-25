@@ -242,7 +242,7 @@ public class MultiStart
     	Solution sol = new Solution();
     	sol.setTotalCosts(0.0);
     	int vehicles = inputs.getVehNumber();
-    	InputsManager.generateDepotEdges(inputs);
+    	InputsManager.generateDepotEdges(inputs, aTest);
     	ArrayList<Node> availableNodes = new  ArrayList<Node>();
         
     	for(int n = 1; n < inputs.getNodes().length-1; n++){ //Avoid first (init depot)
@@ -261,7 +261,7 @@ public class MultiStart
         	  if(route.getEdges().isEmpty() == true){ //if route is empty, select a node to go from the depot
         		  int initCustomer = rng.nextInt(availableNodes.size()-1);
         		  Node initNode = availableNodes.get(initCustomer);
-        		  Edge idEdge = new Edge(initDepot,initNode);
+        		  Edge idEdge = new Edge(initDepot,initNode,aTest.getLongSim());
         		  double initCost = idEdge.calcCosts(initDepot,initNode);
         		  
       
@@ -483,7 +483,7 @@ public static TreeSet<PairBestProfit> calEvaluationFunctionProfit(Set<Node> node
     //%%%%%%%%%%%% Heuristica C&W local %%%%%%%%%%%%%%%%%%%%%%
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	public Solution solveCWS(){
-		InputsManager.generateDepotEdges(inputs);
+		InputsManager.generateDepotEdges(inputs,aTest);
 		Solution best = new Solution();
 		best.setTotalCosts(Double.MAX_VALUE);
 		

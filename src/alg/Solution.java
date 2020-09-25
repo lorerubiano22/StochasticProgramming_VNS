@@ -248,10 +248,7 @@ public class Solution implements Cloneable
         s = s.concat("Sol routing costs: " + getRoutingCosts() + LINE_SEPARATOR);
         s = s.concat("Sol total costs: " + getTotalCosts() + LINE_SEPARATOR);
         s = s.concat("Sol profit: " + getTotalScore() + LINE_SEPARATOR);
-        s = s.concat("Sol Expected profit: " + getStochScore() + LINE_SEPARATOR);
-        s = s.concat("Sol run time: " + getTime() + LINE_SEPARATOR);
         s = s.concat("# of routes in sol: " + routes.size());
-              
         s = s.concat("\r\n\r\n\r\n");
         s = s.concat("List of routes (cost and nodes): \r\n\r\n");
         for (int i = 1; i <= routes.size(); i++)
