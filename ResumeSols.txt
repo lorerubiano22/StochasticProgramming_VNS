@@ -1,2 +1,2 @@
 TypeExec	Instance	Seed	Profit StoProfit	Reliability	RunTime
-Sto	p1.4.m	1025001	140,00	92,00	0,00	10,03
+Sto	p1.4.m	1025001	220,00	210,95	0,00	44,63

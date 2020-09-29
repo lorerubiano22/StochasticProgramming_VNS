@@ -114,6 +114,7 @@ public class VNS {
 			cumulativeObjectivefunction[scenario][0]=bestSolution.getTotalScore();
 			cumulativeObjectivefunction[scenario][1]=bestSolution.getTotalCosts();
 		}
+		computeExpectedScoreBySAA();
 		return bestSolution;
 	}
 
@@ -122,6 +123,23 @@ public class VNS {
 
 
 
+	private void computeExpectedScoreBySAA() {
+
+		// [row=0] es el score
+		// [row=2] es el 
+		double scenarioScore=0;
+		double scenarioDistance=0;
+
+		for(int i=0;i<aTest.getLongSim();i++) {
+			scenarioDistance+=cumulativeObjectivefunction[i][1];
+			scenarioScore+=cumulativeObjectivefunction[i][0];
+		}		
+		double expectedScore=scenarioScore/aTest.getLongSim();
+		double expectedDistance=scenarioDistance/aTest.getLongSim();
+		bestSolution.setScoreSAA(expectedScore);
+		bestSolution.setDistanceSAA(expectedDistance);
+
+	}
 
 	/**
 	 * It applies SimVNS metaheuristic to solve the problem specified at attribute inputs, using test instance class aTest

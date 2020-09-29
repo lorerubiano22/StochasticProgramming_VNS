@@ -312,6 +312,14 @@ public class Solution implements Cloneable
    			return false;
    		return true;
    	}
+
+	public void setScoreSAA(double expectedScore) {
+		StochScore=expectedScore;
+	}
+
+	public void setDistanceSAA(double expectedDistance) {
+		StochCost=	expectedDistance;
+	}
     
     
     
