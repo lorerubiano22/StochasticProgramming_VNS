@@ -19,12 +19,9 @@ import java.util.List;
 
 public class RouteCache {
 	private final HashMap<String, Route> routes;
-	private static Inputs inputs;
-			
-			
-	public RouteCache(Inputs inputs) {
+
+	public RouteCache() {
 		this.routes = new HashMap<String, Route>();
-		this.inputs=inputs;
 	}
 
 	public boolean isCached(Route route) {
@@ -72,7 +69,7 @@ public class RouteCache {
 	
 	
 
-	public static Solution improveWithCache(Solution newSol, RouteCache cache) {		
+	public static Solution improveWithCache(Solution newSol, RouteCache cache, int scenario, Inputs inputs) {		
 		int n = newSol.getRoutes().size(); 
 	
 		Solution newRoutingSol = new Solution(newSol);
@@ -80,7 +77,12 @@ public class RouteCache {
 		for (int i = 0; i < n; i++) {
 			Route route = new Route(); 
 			route = newRoutingSol.getRoutes().get(i);
-			route = improveNodesOrder(route);
+			route = improveNodesOrder(route,scenario,inputs);
+				if(route.getCosts()<0) {
+					System.out.println("Stop");
+				}
+			
+			
 			String skey = key(route);
 			
 			if (!cache.isCached(skey)) 
@@ -103,14 +105,11 @@ public class RouteCache {
 				}
 			}
 		}		
-		
-	//	newRoutingSol.sliceSolutionAndSetCost(inputs);
-		System.out.println("improve");
 		return new Solution(newRoutingSol);		
 	}
 
-	public Solution improve(Solution newSol) {
-		return improveWithCache(newSol, this);
+	public Solution improve(Solution newSol, Inputs inputs, int scenario) {
+		return improveWithCache(newSol, this,scenario,inputs);
 	}
 	
 
@@ -120,8 +119,9 @@ public class RouteCache {
 	    * PRIVATE METHOD improveNodesOrder()
 	    * Given aRoute, this method tries to sort its nodes in a more efficient way.
 	    *  (e.g. by eliminating possible knots in the current route)
+	 * @param inputs 
 	    *******************************************************************************/
-	private static Route improveNodesOrder(Route aRoute)
+	private static Route improveNodesOrder(Route aRoute, int scenario, Inputs inputs)
 	{
 		List<Edge> edges =  aRoute.getEdges();
 		// Edges in aRoute must be directed
@@ -139,11 +139,13 @@ public class RouteCache {
 				Node originE2 = e2.getOrigin();
 				Node endE2 = e2.getEnd();
 				Node endE3 = e3.getEnd();
-				//inputs
-				Edge e1b = inputs.getEdge(originE1, endE2);
-				Edge e2b = inputs.getEdge(endE2, originE2);
-				Edge e3b = inputs.getEdge(originE2, endE3);
-
+				
+				Edge e1b = VNS.callingEdge(originE1, endE2,scenario);
+				
+				Edge e2b = VNS.callingEdge(endE2, originE2,scenario);
+				
+				Edge e3b = VNS.callingEdge(originE2, endE3,scenario);
+				
 
 				double alterCosts = e1b.getCosts() + e2b.getCosts() + e3b.getCosts();
 				// Compare both ways and, if appropriate, update route
@@ -164,6 +166,9 @@ public class RouteCache {
 				}
 			}
 		}
+		
+			aRoute.updating(inputs, scenario);
+			
 		return aRoute;
 	}
 

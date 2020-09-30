@@ -5,10 +5,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Scanner;
+
+
+import umontreal.iro.lecuyer.randvar.LognormalGen;
+import umontreal.iro.lecuyer.rng.RandomStream;
 
 /**
  * @author Angel A. Juan - ajuanp(@)gmail.com
@@ -81,101 +86,221 @@ public class InputsManager
 
 
 
+	/**
+	 * Creates the (edges) savingsList according to the CWS heuristic from nodes.
+	 */
+	public static LinkedList<Edge> generateSavingsList(List<Node> nodes)
+	{
+		int nNodes = nodes.size();      
+
+		System.out.println("NO USAR ESTA!!!!");
+		System.exit(0);
+		Edge[] savingsArray = new Edge[(nNodes - 1) * (nNodes - 2) / 2];
+		Node depot = nodes.get(0);
+		int k = 0;
+		for( int i = 1; i < nNodes - 1; i++ ) // node 0 is the depot
+		{   for( int j = i + 1; j < nNodes; j++ )
+		{   Node iNode = nodes.get(i);
+		Node jNode = nodes.get(j);
+		// Create ijEdge and jiEdge, and assign costs and savings
+		Edge ijEdge = new Edge(iNode, jNode);
+		ijEdge.setCosts(ijEdge.calcCosts(iNode, jNode));
+		// ijEdge.setSavings(ijEdge.calcSavings(iNode, jNode, depot));
+		Edge jiEdge = new Edge(jNode, iNode);
+		jiEdge.setCosts(jiEdge.calcCosts(jNode, iNode));
+		// jiEdge.setSavings(jiEdge.calcSavings(jNode, iNode, depot));
+		// Set inverse edges
+		ijEdge.setInverse(jiEdge);
+		jiEdge.setInverse(ijEdge);
+		// Add a single new edge to the savingsList
+		savingsArray[k] = ijEdge;
+		k++;
+		}
+		}
+		// Construct the savingsList by sorting the edgesList. Uses the compareTo()
+		//  method of the Edge class (TIE ISSUE #1).
 
 
-	
-	public static void generateSavingsList(Inputs inputs,double alpha, Test t, int scenario){ 
-		// 2. compute los savings para cada eje
+
+		Arrays.sort(savingsArray);
+		List sList = Arrays.asList(savingsArray);
+		LinkedList savingsList = new LinkedList(sList);
+		return savingsList;
+	}   
+
+
+
+	/**
+	 * Creates the (edges) savingsList according to the CWS heuristic.
+	 */
+	public static void generateSavingsList(Inputs inputs)
+	{
 		int nNodes = inputs.getNodes().length;
 		LinkedList<Edge> savingsList = new LinkedList<Edge>();
 		Edge[] savingsArray = new Edge[(nNodes - 1) * (nNodes - 2) / 2];
 		Node origin = inputs.getNodes()[0];
 		Node end = inputs.getNodes()[nNodes - 1];
-		for( int i = 1; i < nNodes - 1; i++ ) {// node 0 is the depot
+		for( int i = 1; i < nNodes - 1; i++ ) // node 0 is the depot
+		{   for( int j = i + 1; j < nNodes - 1; j++ )
+		{   Node iNode = inputs.getNodes()[i];
+		Node jNode = inputs.getNodes()[j];
+		// Create ijEdge and jiEdge, and assign costs and savings
+		Edge ijEdge = new Edge(iNode, jNode);
+		ijEdge.setCosts(ijEdge.calcCosts());
+		ijEdge.setSavings(ijEdge.calcSavings( origin,end));
+		Edge jiEdge = new Edge(jNode, iNode);
+		jiEdge.setCosts(jiEdge.calcCosts());
+		jiEdge.setSavings(jiEdge.calcSavings(origin, end));
+		// Set inverse edges
+		ijEdge.setInverse(jiEdge);
+		jiEdge.setInverse(ijEdge);
+		// Add a single new edge to the savingsList
+		savingsList.add(ijEdge);
+		}
+		}
+		// Construct the savingsList by sorting the edgesList. Uses the compareTo()
+		//  method of the Edge class (TIE ISSUE #1).
+		savingsList.sort(Edge.savingsComp);
+		inputs.setList(savingsList);
+	}
+
+	public static void generateSavingsList(Inputs inputs,Test aTest, double alpha, int scenario){
+		// 1. Se debería crear los ejes
+		creatingEdges(inputs,aTest,scenario);
+		// 2. Generar las simulaciones
+		LinkedList<Edge> savingsList = computingSavings(inputs,alpha);
+		// Construct the savingsList by sorting the edgesList. Uses the compareTo()
+		//  method of the Edge class (TIE ISSUE #1).
+		savingsList.sort(Edge.savingsComp);
+		inputs.setList(savingsList);
+	}
+
+
+
+	private static LinkedList<Edge> computingSavings(Inputs inputs, double alpha) {
+		LinkedList<Edge> savingsList = new LinkedList<Edge>();
+		Node origin = inputs.getNodes()[0];
+		Node end = inputs.getNodes()[inputs.getNodes().length - 1];
+		for(Edge e:inputs.getEdgesDirectory().values()) {
+			if(e.getOrigin().getId()!=origin.getId() && e.getEnd().getId()!=end.getId()) {
+				e.setSavings(e.calcSavings(origin,end,alpha));
+				savingsList.add(e);
+				// calling the inverse
+				Edge jiEdge=inputs.getEdgesDirectory().get(e.getInverseEdge().getKey());
+				jiEdge.setSavings(jiEdge.calcSavings(origin, end,alpha));
+				savingsList.add(jiEdge);
+			}
+		}
+		return savingsList;
+	}
+
+
+
+
+
+
+	private static void settingCosts(Inputs inputs, int scenario) {
+		for(Edge e:inputs.getEdgesDirectory().values()) {
+			if(scenario<2) {
+				e.setCosts(e.getMeanCost());
+			}
+			else{
+				e.setCosts(e.getStoCosts(scenario));
+			}
+		}
+	}
+
+
+
+
+
+
+	private static void generatingScenarios(Inputs inputs, Test aTest) {
+
+		for(Edge e:inputs.getEdgesDirectory().values()) {
+			if(e.getStoCost()==null) {
+				double[] times= new double[aTest.getLongSim()];
+				if(e.getMeanCost()==0) {
+					System.out.print("Stop");
+				}
+				double mean = e.getMeanCost(); // esta es la distancia de cada eje 
+				double newArc=mean;
+				for(int i=0;i<Math.max(aTest.getLongSim(),1);i++) {
+					if(mean>0) {
+						newArc =getStochasticValue(aTest.getRandomStream(),mean,aTest.getVariance());	
+						times[i]=newArc;
+					}
+				}	
+				e.setScenarios(times);
+			}	
+		}
+	}
+
+	public static double getStochasticValue(RandomStream stream, double mean, float variance) {
+		double squareSigma = Math.log(1 + (variance / Math.pow(mean, 2)));
+		double mu = Math.log(mean) - squareSigma / 2;
+		double sigma = Math.sqrt(squareSigma);
+		return LognormalGen.nextDouble(stream, mu, sigma);
+	}
+
+
+
+
+
+
+	private static void creatingEdges(Inputs inputs, Test aTest, int scenario) {
+		int nNodes = inputs.getNodes().length;
+		LinkedList<Edge> savingsList = new LinkedList<Edge>();
+		Edge[] savingsArray = new Edge[(nNodes - 1) * (nNodes - 2) / 2];
+
+		for( int i = 1; i < nNodes - 1; i++ ) { // node 0 is the depot   
 			for( int j = i + 1; j < nNodes - 1; j++ ){
 				Node iNode = inputs.getNodes()[i];
 				Node jNode = inputs.getNodes()[j];
-				// computing the saving for edge (i)---- (j)
-				// Costs of origin depot to end node
-				Edge ijEdge =inputs.getEdge(iNode, jNode);
-				if(ijEdge==null) {
-					ijEdge = new Edge(iNode, jNode,t.getLongSim());
-					ijEdge.setMeanCosts(ijEdge.calcCosts());
-					ijEdge.setCosts(ijEdge.calcCosts());
-					ijEdge.setTimeByScenario(t);
-					inputs.getEdgesDirectory().put(ijEdge.getKeyEdge(), ijEdge);
+				// Create ijEdge and jiEdge, and assign costs and savings
+				String key=iNode.getId()+","+jNode.getId();
+				Edge ijEdge =null;
+				if(inputs.getEdgesDirectory().containsKey(key)) {
+					ijEdge =inputs.getEdgesDirectory().get(key);
 				}
-				// Costs of origin depot to end node
-				double Coj = inputs.getEdge(origin, jNode).getTimeScenario(scenario);// se calculan los savins de acuerdo con el escenarios
-				// Costs of origin node to end depot
-				double Cie = inputs.getEdge(iNode, end).getTimeScenario(scenario);
-				// Costs of originNode to endNode
-				double Cij = ijEdge.getTimeScenario(scenario);
-				// computing savings
-				double classicSaving = Coj + Cie - Cij;
-				double weightedSaving = alpha*classicSaving + (1-alpha)*(iNode.getProfit() + jNode.getProfit());
-				ijEdge.setSavings(weightedSaving);
+				else {
+					ijEdge = new Edge(iNode, jNode);
+				}
+				ijEdge.setCosts(ijEdge.calcCosts());
+				ijEdge.setMean(ijEdge.getCosts());
 				// inverse edge
-				Edge jiEdge =inputs.getEdge(jNode, iNode);
-				if(jiEdge==null) {
-					jiEdge = new Edge(jNode, iNode,t.getLongSim());
-					jiEdge.setMeanCosts(jiEdge.calcCosts());
-					jiEdge.setCosts(jiEdge.calcCosts());
-					jiEdge.setTimeByScenario(t);
-					inputs.getEdgesDirectory().put(jiEdge.getKeyEdge(), jiEdge);
+				Edge jiEdge =null;
+				key=jNode.getId()+","+iNode.getId();
+				if(inputs.getEdgesDirectory().containsKey(key)) {
+					jiEdge =inputs.getEdgesDirectory().get(key);
 				}
-				// Costs of origin depot to end node
-				Coj = inputs.getEdge(origin, iNode).getTimeScenario(scenario);// se calculan los savins de acuerdo con el escenarios
-				// Costs of origin node to end depot
-				Cie = inputs.getEdge(jNode, end).getTimeScenario(scenario);
-				// Costs of originNode to endNode
-				Cij = jiEdge.getTimeScenario(scenario);
-				// computing savings
-				classicSaving = Coj + Cie - Cij;
-				weightedSaving = alpha*classicSaving + (1-alpha)*(iNode.getProfit() + jNode.getProfit());
-				jiEdge.setSavings(weightedSaving);	
+				else {
+					jiEdge = new Edge(jNode, iNode);
+				}
+				jiEdge.setCosts(jiEdge.calcCosts());
+				jiEdge.setMean(jiEdge.getCosts());
+				// Set inverse edges
+				ijEdge.setInverse(jiEdge);
+				jiEdge.setInverse(ijEdge);
+				// Add a single new edge to the savingsList
 				savingsList.add(ijEdge);
 				savingsList.add(jiEdge);
+				inputs.getEdgesDirectory().put(ijEdge.getKey(), ijEdge);
+				inputs.getEdgesDirectory().put(jiEdge.getKey(), jiEdge);
 			}
 		}
 		// Construct the savingsList by sorting the edgesList. Uses the compareTo()
 		//  method of the Edge class (TIE ISSUE #1).
 		savingsList.sort(Edge.savingsComp);
 		inputs.setList(savingsList);
+		// generating scenarios
+		generatingScenarios(inputs,aTest);
+		// 3. Calcular los savings
+		settingCosts(inputs,scenario);
 
 	}
 
 
-
-	public static void generateEdgesToMergeList(Inputs inputs,Test t)  { // solo se crean las conexiones para mezclar las rutas
-		int nNodes = inputs.getNodes().length;
-		for( int i = 1; i < nNodes - 1; i++ ) { // node 0 is the depot
-			for( int j = i + 1; j < nNodes - 1; j++ ) {
-				// edge (i)-----(j)
-				if(i==7 && j==8) {
-					System.out.println("Stop");
-				}
-				Node iNode = inputs.getNodes()[i];
-				Node jNode = inputs.getNodes()[j];
-				// Create ijEdge and jiEdge, and assign costs and saving
-				Edge ijEdge = new Edge(iNode, jNode,t.getLongSim());
-				ijEdge.setMeanCosts(ijEdge.calcCosts());
-				ijEdge.setCosts(ijEdge.calcCosts());
-				ijEdge.setTimeByScenario(t);
-				inputs.getEdgesDirectory().put(ijEdge.getKeyEdge(), ijEdge);
-				// creando el la conexión con el nodo origen (origen - i)
-				Edge jiEdge = new Edge(jNode, iNode,t.getLongSim());
-				jiEdge.setMeanCosts(jiEdge.calcCosts());
-				jiEdge.setTimeByScenario(t);
-				jiEdge.setMeanCosts(ijEdge.calcCosts());
-				jiEdge.setCosts(jiEdge.calcCosts());
-				inputs.getEdgesDirectory().put(jiEdge.getKeyEdge(), jiEdge);
-				// Set inverse edges
-				ijEdge.setInverse(jiEdge);
-				jiEdge.setInverse(ijEdge);
-			}
-		}
-	}
 
 
 
@@ -189,36 +314,42 @@ public class InputsManager
 		Node depot = nodes[0]; // depot is always node 0
 		Node end = nodes[nodes.length-1];
 		// Create diEdge and idEdge, and set the corresponding costs
-		int nNodes = inputs.getNodes().length;
+		HashMap<String, Edge> edgesDirectory= new HashMap<String, Edge>();
+
 		LinkedList<Edge> distanceList = new LinkedList<Edge>();
 		for( int i = 1; i < nodes.length - 1; i++ ) // node 0 is depot
 		{   Node iNode = nodes[i];
-		Edge diEdge = new Edge(depot, iNode, aTest.getLongSim());
+		/// generating the key
+		String key=depot.getId()+","+iNode.getId();
+		Edge diEdge=null;
+		if(inputs.getEdgesDirectory().containsKey(key)) {
+			diEdge=inputs.getEdgesDirectory().get(key);
+		}
+		else {
+			diEdge = new Edge(depot, iNode);}
 		iNode.setDiEdge(diEdge);
 		diEdge.setCosts(diEdge.calcCosts(depot, iNode));
-		diEdge.setMeanCosts(diEdge.calcCosts(depot, iNode));
-		diEdge.setTimeByScenario(aTest); // se llena el array con los tiempos por escenario
-		inputs.getEdgesDirectory().put(diEdge.getKeyEdge(), diEdge);
-		//
-		for(int j=0;j<aTest.getLongSim();j++) {
-			System.out.println("Scenario " + j+ " time "+ diEdge.getTimeScenario(j));	
+		diEdge.setMean(diEdge.getCosts());
+
+		// inverse node
+		key=iNode.getId()+","+end.getId();
+		Edge idEdge=null;
+		if(inputs.getEdgesDirectory().containsKey(key)) {
+			idEdge=inputs.getEdgesDirectory().get(key);
 		}
-		//
-		Edge idEdge = new Edge(iNode, end,aTest.getLongSim());  // solo se crea el eje y el array con los parametros
+		else {
+			idEdge = new Edge(iNode, end);
+		}
+
 		iNode.setIdEdge(idEdge);
 		idEdge.setCosts(idEdge.calcCosts(iNode, end));
-		idEdge.setMeanCosts(idEdge.calcCosts(iNode, end));
+		idEdge.setMean(idEdge.getCosts());
 		iNode.setRoundtripToDepotCosts(diEdge.getCosts() + idEdge.getCosts());
-		idEdge.setTimeByScenario(aTest); // se llena el array con los tiempos por escenario
-		inputs.getEdgesDirectory().put(idEdge.getKeyEdge(), idEdge);
 		// Set inverse edges
-		distanceList.add(idEdge);
-		for(int j=0;j<aTest.getLongSim();j++) {
-			System.out.println("Scenario " + j+ " time "+ idEdge.getTimeScenario(j));	
+		distanceList.add(diEdge);
+		edgesDirectory.put(diEdge.getKey(), diEdge);
+		edgesDirectory.put(idEdge.getKey(), idEdge);
 		}
-		}
-
-
 		distanceList.sort(Edge.minDistance);
 		inputs.setdistanceDepot(distanceList);      
 	}

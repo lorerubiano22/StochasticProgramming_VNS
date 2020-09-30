@@ -2,7 +2,6 @@ package alg;
 
 import java.util.*;
 
-import com.sun.org.apache.xpath.internal.NodeSet;
 
 /**
  * @author lluc
@@ -18,9 +17,11 @@ public class CWS{
 		currentSol = generateDummySol(nodes,inputs);
 		Node depot = nodes.get(0);
 		int index;
+
 		LinkedList<Edge> savings = new LinkedList<Edge>(inputs.getSavings());
 		/* 3. PERFORM THE EDGE-SELECTION & ROUTING-MERGING ITERATIVE PROCESS */
 		//System.out.println(savings);
+		
 		while (!savings.isEmpty()) {
 			// 3.1. Select the next edge from the list (either at random or not)
 			
@@ -93,15 +94,6 @@ public class CWS{
 					// 3.4.11. Delete route jR from currentSolution
 					currentSol.setRoutingCosts(currentSol.getRoutingCosts() - ijEdge.getClassicSavings());
 					currentSol.getRoutes().remove(jR);
-				System.out.println("Checking operational cost");
-for(Route r:currentSol.getRoutes()) {
-	double distance=0;
-	for(Edge e:r.getEdges()) {
-		distance+=e.getCosts();
-		System.out.println("Distance ejes"+e.getCosts());
-	}
-	System.out.println("Checking operational cost_ Computing distance" + r.getCosts());
-}
 				}
 			}
 	

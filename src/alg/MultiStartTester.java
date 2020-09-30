@@ -58,13 +58,6 @@ public class MultiStartTester
             System.out.print("Start test for Instance: " + aTest.getInstanceName());
             System.out.println();
 
-            
-            //USE THE MULTI-START ALGORITHM TO SOLVE THE INSTANCE
-            Random rng = new Random(aTest.getSeed());
-            RandomStreamBase stream = new LFSR113(); // L'Ecuyer stream
-            aTest.setRandomStream(stream);
-            
-            
           // 2.1 GET THE INSTANCE INPUTS (DATA ON NODES AND VEHICLES)
             // "instanceName.txt" contains data on nodes
             String inputNodesPath = inputFolder + File.separator + aTest.getInstanceName() + sufixFileNodes;
@@ -73,31 +66,31 @@ public class MultiStartTester
             // Read inputs files (nodes) and construct the inputs object
             Inputs inputs = InputsManager.readInputs(inputNodesPath);
             
+            //USE THE MULTI-START ALGORITHM TO SOLVE THE INSTANCE
+            Random rng = new Random(aTest.getSeed());
+            RandomStreamBase stream = new LFSR113(); // L'Ecuyer stream
+            aTest.setRandomStream(stream);
+            
             //Tengo las distancias del depot de salida a los customers odenadas de mayor a menor
             InputsManager.generateDepotEdges(inputs,aTest);
-            //Inputs inputs,double alpha, Test t, int scenario){ 
-        		// 1. compute las connecciones
-            InputsManager.generateEdgesToMergeList(inputs,aTest); // Aca se crean las conexiones entre nodos diferentes al depot
-          
+            
+           
             
             VNS alg2 = new VNS(aTest,inputs,rng);
             Solution bestSolution = null;
             Outputs output = null;
             
             
-          //  if(aTest.isModeExe() == true){ //Ejec. determinista
+           
                  bestSolution = alg2.solveDet();
                  output = new Outputs();
-            //}
-//            else{
-//                 bestSolution = alg2.solveSto();
-//                 output = new Outputs(); 	
-//            }
+            
 
             
             output.setOBSol(bestSolution);
             output.setInstanceName(aTest.getInstanceName());
             output.setseed(aTest.getSeed());
+            output.setVariance(aTest.getVariance());
             outList.add(output);
             Integer best_score = BKS.bestSolution(aTest.getInstanceName());  
         }
