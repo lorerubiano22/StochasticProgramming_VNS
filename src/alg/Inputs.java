@@ -15,15 +15,17 @@ public class Inputs implements Serializable
     private int vehicles = 0; // Vehicle capacity (homogeneous fleet)
     private LinkedList<Edge> savings = null; 
     private LinkedList<Edge> depotDistance = null; //Distance depot with customers 
+    private HashMap<String,Edge> edgesDirectory = new HashMap<>(); //List edges 
     private float[] vrpCenter; // (x-bar, y-bar) is a geometric VRP center
     private double alpha = 0.0;
     private double beta = 0.0;
     private double tMax; //Maximum time of travel
     private double maxprofit;
     private double minprofit;
-	private HashMap<String,Edge> edgesDirectory = new HashMap<>(); //Distance depot with customers 
 
-	
+
+
+
 	public Inputs(int n)
     {   nodes = new Node[n]; // n nodes, including the depot
         vrpCenter = new float[2];
@@ -44,18 +46,17 @@ public class Inputs implements Serializable
     public double getMaxprofit() {return maxprofit;}
     public double getMinprofit() {return minprofit;}
     public LinkedList<Edge> getdistanceDepot(){return depotDistance;}
-    public HashMap<String, Edge> getEdgesDirectory() {return edgesDirectory;}
-
-	    /* SET METHODS */
+    public HashMap<String,Edge> getEdgesDirectory(){return edgesDirectory;}
+      
+    
+    /* SET METHODS */
     public void setVrpCenter(float[] center){vrpCenter = center;}
     public void setVehNumber(int c){vehicles = c;}
     public void setNodes(Node[] nodes){this.nodes = nodes;}
     public void setList(LinkedList<Edge> sList){savings = sList;}
 	public void settMax(double tMax) {this.tMax = tMax;}	
 	public void setdistanceDepot(LinkedList<Edge> sList){depotDistance = sList;}
-	public void setEdgesDirectory(HashMap<String, Edge> edgesDirectory) {this.edgesDirectory = edgesDirectory;}
-	
-	
+    
 	public void setMaxMin()
 	{
 	    maxprofit=0;

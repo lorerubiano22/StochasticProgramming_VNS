@@ -113,17 +113,4 @@ public class Route implements Serializable,Comparable<Route>
 		if (score > arg0.score) return -1;
 		else return 0;
 	}
-
-
-
-	public void updating(Inputs inputs, int scenario) {
-	double scoreRoute=0;
-	double distanceRoute=0;
-	for(Edge e:this.edges) {
-		distanceRoute+=e.getCosts();
-		scoreRoute+=e.getEnd().getProfit();
-	}
-		this.setCosts(distanceRoute);
-		this.setScore(scoreRoute);
-	}
 }

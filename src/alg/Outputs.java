@@ -64,7 +64,6 @@ public class Outputs
     public Solution getOBSol(){return bestSol;}
     public String getInstanceName(){return instanceName;}
     public float getLambda(){return lambda;}
-    public float getVariance(){return variance;}
     public float getK(){return variance;}
     public float getRunningT(){return runningTime;}
 	public double getAlpha() {return alpha;}
@@ -135,7 +134,7 @@ public class Outputs
 		try 
 		{   
 			PrintWriter out = new PrintWriter("ResumeSols.txt");
-			out.printf("TypeExec	Instance	Seed	Variance    Profit StoProfit	Reliability	RunTime");
+			out.printf("TypeExec	Instance	Seed	Profit StoProfit	Reliability	RunTime");
 			for(Outputs o : list){
 				Solution sol = o.getOBSol();
 				out.println();
@@ -148,7 +147,6 @@ public class Outputs
 					out.printf("Sto	%s",o.getInstanceName());					
 				}	
 				out.printf("	"+(int)o.getSeed());
-				out.printf("	%.2f",o.getVariance());
 				out.printf("	%.2f",sol.getTotalScore());
 				out.printf("	%.2f", sol.getStochScore());
 				out.printf("	%.2f",sol.getReliability());
@@ -161,10 +159,4 @@ public class Outputs
 		{   System.out.println("Error processing output file: " + exception);
 		}
 	}//end method
-
-
-	public void setVariance(float variance2) {
-		variance=variance2;
-		
-	}
 }

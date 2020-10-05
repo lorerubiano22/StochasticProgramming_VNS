@@ -2,9 +2,6 @@ package alg;
 
 import java.util.*;
 
-import umontreal.iro.lecuyer.randvar.LognormalGen;
-import umontreal.iro.lecuyer.rng.RandomStream;
-
 /**
  * Created by lluc on 2/06/17.
  * This class encapsulates the metaheuristic VNS
@@ -14,24 +11,20 @@ public class VNS {
 	private static final int P_MIN = 1 ;
 	private static final int P_MAX = 100 ;
 	private static final int P_STEP = 2 ;
-	private static Test aTest;
-	private static Inputs inputs;
+	private Test aTest;
+	private Inputs inputs;
 	private Random rng;
 	private double bestAlpha;
 	private Solution initialSolution;
 	private Solution bestSolution;
 	private static final double EPSILON = 10E-6;
 	RouteCache  routecache = new RouteCache();
-	private double[][] cumulativeObjectivefunction=null;
-
-
 
 	VNS(Test myTest, Inputs myInputs, Random myrng)
 	{
 		aTest = myTest;
 		inputs = myInputs;
 		rng = myrng;
-		cumulativeObjectivefunction= new double[aTest.getLongSim()][2];
 	}
 
 
@@ -43,7 +36,11 @@ public class VNS {
 	 * @return The best solution found by VNS
 	 */
 	public Solution solveDet(){
+		generationEdges(aTest,inputs);
+		generatingScenarios();
 		for(int scenario=0;scenario<aTest.getLongSim();scenario++) {
+
+
 			long start = ElapsedTime.systemTime();
 			double elapsed = 0.0;
 
@@ -51,12 +48,8 @@ public class VNS {
 			double alph = 0.99;
 			inputs.setMaxMin();
 
-			//aTest.getLongSim()
-
-
-
 			//Creo solucion inicial
-			createInitialSolution(scenario);
+			createInitialSolution();
 			System.out.println(initialSolution);
 
 			Solution newSol = new Solution();
@@ -68,27 +61,16 @@ public class VNS {
 				int p = P_MIN;
 				T = 100;
 				while(p <= P_MAX){
-					newSol = new Solution(shake(baseSolution,p,scenario));
-					if(hasImproved(newSol) || newSol.getTotalCosts()<0){
-						System.out.println("I improved shake" + newSol.getTotalScore()+ " "+newSol.getTotalCosts());
-					}
-					newSol = new Solution(routecache.improve(newSol,inputs,scenario));
-					if(hasImproved(newSol) || newSol.getTotalCosts()<0){
-						System.out.println("I improved improve" + newSol.getTotalScore()+ " "+newSol.getTotalCosts());
-					}
+					newSol = new Solution(shake(baseSolution,p));
+					newSol = new Solution(routecache.improve(newSol,aTest,inputs,scenario));
 					newSol = new Solution(LocalSearch2(newSol,scenario));
-					if(hasImproved(newSol) || newSol.getTotalCosts()<0){
-						System.out.println("I improved  LocalSearch2" + newSol.getTotalScore()+ " "+newSol.getTotalCosts());
-					}
 					newSol = new Solution(LocalSearch4(newSol,scenario));
-					if(hasImproved(newSol) || newSol.getTotalCosts()<0){
-						System.out.println("I improved LocalSearch4 " + newSol.getTotalScore()+ " "+newSol.getTotalCosts());
-					}
+
 					if(hasImproved(newSol)){
 						bestSolution = new Solution(newSol);
 						baseSolution = new Solution(newSol);
 						bestSolution.setTime(elapsed);
-						System.out.println("I improved " + newSol.getTotalScore()+ " "+newSol.getTotalCosts());
+						System.out.println("I improved " + bestSolution.getTotalScore()+ " "+bestSolution.getTotalCosts());
 						p = P_MIN;
 					}
 					else{ 
@@ -111,11 +93,9 @@ public class VNS {
 			/*** STEP 2*********   */
 			bestSolution = new Solution(Stochastic.simulate(bestSolution,aTest.getLongSim(), aTest.getRandomStream(),aTest,inputs,-1,-1));
 
-
-			cumulativeObjectivefunction[scenario][0]=bestSolution.getTotalScore();
-			cumulativeObjectivefunction[scenario][1]=bestSolution.getTotalCosts();
-			System.out.println(bestSolution);}
-		computingExpectedCostandScore(bestSolution);
+			System.out.println(bestSolution);
+			restartInputs();
+		}
 		return bestSolution;
 	}
 
@@ -124,23 +104,88 @@ public class VNS {
 
 
 
-	private void computingExpectedCostandScore(Solution bestSolution2) {
-		System.out.print(""+ aTest.getLongSim());
-		double averageCost=0;
-		double averageScore=0;
-		double distance=0;
-		double score=0;
-		for(int scenario=0;scenario<aTest.getLongSim();scenario++) {
-			// row=0 <- score // row= 1 <- cost
-			score+=cumulativeObjectivefunction[scenario][0];
-			distance+=cumulativeObjectivefunction[scenario][1];
+
+	private void generatingScenarios() {
+		// 1. generation Scenario
+		double[] timesScenario= new double [aTest.getLongSim()];
+		
+		for(Edge e:inputs.getEdgesDirectory().values()) {
+			//Simulat		
 		}
-		averageCost=distance/aTest.getLongSim();
-		averageScore=score/aTest.getLongSim();	
-		bestSolution2.setStochCost(averageCost);
-		bestSolution2.setStochScore(averageScore);
-		System.out.print(" Average cost "+ averageCost+" Average score "+averageScore);
+		
+
 	}
+
+
+
+
+
+	private void generationEdges(Test aTest, Inputs inputs) {
+		//1. Generation depot connections 
+		Node[] nodes = inputs.getNodes();
+		Node depot = nodes[0]; // depot is always node 0
+		Node end = nodes[nodes.length-1];
+		// Create diEdge and idEdge, and set the corresponding costs
+		int nNodes = inputs.getNodes().length;
+		LinkedList<Edge> distanceList = new LinkedList<Edge>();
+		for( int i = 1; i < nodes.length - 1; i++ ) // node 0 is depot
+		{   Node iNode = nodes[i];
+		Edge diEdge = new Edge(depot, iNode);
+		iNode.setDiEdge(diEdge);
+		diEdge.setCosts(diEdge.calcCosts(depot, iNode));
+		Edge idEdge = new Edge(iNode, end);
+		iNode.setIdEdge(idEdge);
+		idEdge.setCosts(idEdge.calcCosts(iNode, end));
+		inputs.getEdgesDirectory().put(diEdge.getKey(), diEdge);
+		inputs.getEdgesDirectory().put(idEdge.getKey(), idEdge);
+		}
+
+
+
+		//2. Generation connections
+
+		for( int i = 1; i < nNodes - 1; i++ ) // node 0 is the depot
+		{   for( int j = i + 1; j < nNodes - 1; j++ )
+		{
+			Node iNode = inputs.getNodes()[i];
+			Node jNode = inputs.getNodes()[j];
+			// Create ijEdge and jiEdge, and assign costs and savings
+			Edge ijEdge = new Edge(iNode, jNode);
+			ijEdge.setCosts(ijEdge.calcCosts());                
+			Edge jiEdge = new Edge(jNode, iNode);
+			jiEdge.setCosts(jiEdge.calcCosts());
+			// Set inverse edges
+			ijEdge.setInverse(jiEdge);
+			jiEdge.setInverse(ijEdge);
+			// Add a single new edge to the savingsList
+			inputs.getEdgesDirectory().put(ijEdge.getKey(), ijEdge);
+			inputs.getEdgesDirectory().put(jiEdge.getKey(), jiEdge);
+		}
+		}
+
+
+
+
+	}
+
+
+
+
+
+	private void restartInputs() {
+		// data inputs
+		inputs.getSavings().clear();
+		inputs.getdistanceDepot().clear();
+		// data nodes
+		for(Node n:inputs.getNodes()) {
+			n.setInRoute(null);
+			n.setIsInterior(false);
+			n.setIsOriginAdjacent(false);
+			n.setIsEndAdjacent(false);			
+		}
+	}
+
+
 
 
 
@@ -166,17 +211,16 @@ public class VNS {
 	/**
 	 * It creates the initial solution for the VNS metaheuristic, using CWS heuristic, and
 	 * determining the best value of alpha to generate the savings list
-	 * @param scenario 
 	 */
-	private void createInitialSolution(int scenario){
-		InputsManager.generateDepotEdges(inputs,aTest);
+	private void createInitialSolution(){
+		InputsManager.generateDepotEdges(inputs);
 		Solution best = new Solution();
 		best.setTotalCosts(Double.MAX_VALUE);
 
 
 		bestAlpha = 0.0;
 		for (double alpha = 0; alpha <= 1; alpha+=0.1){
-			InputsManager.generateSavingsList(inputs,aTest,alpha,scenario);
+			InputsManager.generateSavingsList(inputs,alpha);
 			Solution detSol = new Solution(CWS.solve(inputs,aTest,this.rng,0));
 			Collections.sort(detSol.getRoutes());
 			if(detSol.getTotalScore() >= best.getTotalScore() ||
@@ -239,9 +283,8 @@ public class VNS {
 	 * generates them again using biased C&W constructive heuristic
 	 * @param base  Base solution to shake
 	 * @param p percentage of routes of base Solution to delete
-	 * @param scenario 
 	 */
-	private Solution shake(Solution base, int p, int scenario){
+	private Solution shake(Solution base, int p){
 
 		Solution ShakeSol = new Solution(base);
 		Solution ShakeSolAux = new Solution(base);
@@ -269,18 +312,11 @@ public class VNS {
 
 		/* Create a subproblem with previous nodes and solve it with CWS */
 		Inputs subInput = new Inputs(inputs,nodes);
-		InputsManager.generateDepotEdges(subInput,aTest);
+		InputsManager.generateDepotEdges(inputs,subInput);
 
-		InputsManager.generateSavingsList(subInput,aTest,bestAlpha,scenario);
+		InputsManager.generateSavingsList(inputs,subInput,bestAlpha);
 		Solution subSol = CWS.solve(subInput,aTest,this.rng,1);
-	for(Route r:subSol.getRoutes()) {
-		r.updating(inputs, scenario);
-		if(r.getCosts()<0) {
-			System.out.println("Stop");
-		}
-	}
 		routes.addAll(subSol.getRoutes());
-
 		mergeNotUsedNodes(ShakeSol,subSol);
 
 		/* Merge baseSolution and subSolution and slice routes not used*/
@@ -351,8 +387,26 @@ public class VNS {
 
 		Node p = edge.getOrigin();
 		Node q = edge.getEnd();
+		String key1=p.getId()+","+ node.getId();
+		String key2=node.getId()+","+q.getId();
+		String key3=p.getId()+","+q.getId();
 
-		double cost = (edge.calcCosts(p, node) + edge.calcCosts(node, q) - edge.calcCosts(p, q) );
+		Edge e1=inputs.getEdgesDirectory().get(key1);
+		//if(e1==null) {
+		System.out.println("e1 " +e1.toString());
+		//}
+		Edge e2=inputs.getEdgesDirectory().get(key2);
+		//if(e2==null) {
+		System.out.println("e2 "+e2.toString());
+		//	}
+		Edge e3=inputs.getEdgesDirectory().get(key3);
+		//if(e3==null) {
+		System.out.println("e3 "+e3.toString());
+		//}
+
+		double cost = (e1.getCosts() +
+				e2.getCosts() - 
+				e3.getCosts() + 0);
 		if( (route.getCosts() + cost ) <= inputs.gettMax()){
 			ismerge = true;
 			route.setCosts((route.getCosts() + cost));
@@ -377,7 +431,7 @@ public class VNS {
 		Solution LsSolution = new Solution(AuxSolLS);
 		double min = 0.0;	
 		Boolean delRandom = false;
-
+		String key="";
 
 		int nodesToDelete = (int) (inputs.getNodes().length * 0.05);
 		boolean stopped = false;
@@ -398,10 +452,7 @@ public class VNS {
 		}
 
 		for(Route r : LsSolution.getRoutes()){
-			if(r.getCosts()<0) {
-				System.out.println("Stop cost " + r.getCosts());
-			}
-			
+
 			if(r.getEdges().size() >= 4){
 				for(int i = 0;i<r.getEdges().size()-1;i++){
 					int index = i;
@@ -425,21 +476,17 @@ public class VNS {
 						int  positionEnd = r.getEdges().indexOf(edgeEnd); //Posicion del edge en la routa
 						r.getEdges().remove(edgeEnd); //Borro el egde de la ruta  				
 						saveCost +=  edgeEnd.getCosts();
-						Edge newEdge =callingEdge(edgeIni.getOrigin(), edgeEnd.getEnd(),scenario);
+						key=edgeIni.getOrigin().getId()+","+edgeEnd.getEnd().getId();
+						Edge newEdge = inputs.getEdgesDirectory().get(key);
+						//Edge newEdge = new Edge(edgeIni.getOrigin(), edgeEnd.getEnd());
 
-
+						//newEdge.setCosts(newEdge.calcCosts(edgeIni.getOrigin(), edgeEnd.getEnd()));
 						r.getEdges().add(position, newEdge);
 
 						double lastScoreRoute = r.getScore();
-						if((r.getCosts() - saveCost + newEdge.getCosts())<0) {
-							System.out.println("Stop");
-						}
 						r.setScore(r.getScore() - edgeIni.getEnd().getProfit()); //resto score
 						r.setCosts(r.getCosts() - saveCost + newEdge.getCosts());
-						if(r.getCosts()<0) {
-							System.out.println("Stop");
-						}
-						
+
 						LsSolution.getNotUsedNodes().add(edgeIni.getEnd());	
 						r.setClientsServed(r.getEdges().size()-1); //Customers visitados en la ruta
 
@@ -457,80 +504,9 @@ public class VNS {
 			}
 		}
 
-		AuxSolLS = new Solution(routecache.improve(LsSolution,inputs,scenario)); 
+		AuxSolLS = new Solution(routecache.improve(LsSolution,aTest,inputs,scenario)); 
 		return AuxSolLS;
 	}
-
-
-
-
-
-	public static Edge callingEdge(Node origin, Node end, int scenario) {
-		String key= origin.getId()+","+end.getId();
-		Edge newEdge =null; 
-		if(inputs.getEdgesDirectory().containsKey(key)) {
-			newEdge =inputs.getEdgesDirectory().get(key);
-		}
-		else {
-			newEdge = new Edge(origin, end);
-			newEdge.setCosts(newEdge.calcCosts());
-			newEdge.setMean(newEdge.getCosts());
-			inputs.getEdgesDirectory().put(newEdge.getKey(), newEdge);
-
-		}
-		generatingScenarios(newEdge);
-
-		settingCosts(newEdge,scenario);
-		return newEdge;
-	}
-
-
-
-
-
-	private static void settingCosts(Edge newEdge, int scenario) {
-		if(scenario<2) {
-			newEdge.setCosts(newEdge.getMeanCost());
-		}
-		else {
-			newEdge.setCosts(newEdge.getStoCosts(scenario));
-		}
-	}
-
-
-
-
-
-	private static void generatingScenarios(Edge e) {
-		if(e.getStoCost()==null) {
-			double[] times= new double[aTest.getLongSim()];
-			if(e.getMeanCost()==0) {
-				System.out.print("Stop");
-			}
-			double mean = e.getMeanCost(); // esta es la distancia de cada eje 
-			double newArc=mean;
-			for(int i=0;i<Math.max(aTest.getLongSim(),1);i++) {
-				if(mean>0) {
-					newArc =getStochasticValue(aTest.getRandomStream(),mean,aTest.getVariance());	
-					times[i]=newArc;
-				}
-			}	
-			e.setScenarios(times);
-		}	
-
-	}
-
-
-
-
-
-	public static double getStochasticValue(RandomStream stream, double mean, float variance) {
-		double squareSigma = Math.log(1 + (variance / Math.pow(mean, 2)));
-		double mu = Math.log(mean) - squareSigma / 2;
-		double sigma = Math.sqrt(squareSigma);
-		return LognormalGen.nextDouble(stream, mu, sigma);
-	}
-
 
 
 
@@ -548,7 +524,7 @@ public class VNS {
 		Solution LsSolution = new Solution(AuxSolLS);
 		Solution BaseSol = new Solution(AuxSolLS);
 		Boolean improve = true;
-
+		String key="";
 		while(improve == true){
 			for(Route r : LsSolution.getRoutes()){
 				for(int i = 0;i<r.getEdges().size();i++){
@@ -575,8 +551,10 @@ public class VNS {
 						//System.out.println("Mejoraaaa LS");
 
 						//P -> J
-						Edge pjEdge = callingEdge(edge.getOrigin(), b.getvalue(), scenario);
+						key=edge.getOrigin().getId()+","+b.getvalue().getId();
 
+						Edge pjEdge = inputs.getEdgesDirectory().get(key);
+						//Edge pjEdge = new Edge(edge.getOrigin(), b.getvalue());
 						//pjEdge.setCosts(pjEdge.calcCosts(edge.getOrigin(), b.getvalue()));
 						r.getEdges().add(position, pjEdge);
 
@@ -585,25 +563,22 @@ public class VNS {
 						r.setScore(b.getvalue().getProfit() + r.getScore()); //Sumo score
 
 						//J -> Q
-						Edge jqEdge =callingEdge(b.getvalue(), edge.getEnd(), scenario);
+						key=b.getvalue().getId()+","+edge.getEnd().getId();
+						Edge jqEdge = inputs.getEdgesDirectory().get(key);
+						//	Edge jqEdge = new Edge(b.getvalue(), edge.getEnd());
+						//jqEdge.setCosts(jqEdge.calcCosts(b.getvalue(), edge.getEnd()));
 						r.getEdges().add(position + 1, jqEdge);
 
 						r.setClientsServed(r.getEdges().size()-1); //Customers visitados en la ruta
-						if(r.getCosts()<0) {
-							System.out.println("Stop");
-						}
-						
-						r.updating(inputs,scenario);
+
 						LsSolution.setTotalScore(r.getScore() + LsSolution.getTotalScore() - lastScoreRoute); //Actualizo score de la sol
 						LsSolution.setTotalCosts(LsSolution.getTotalCosts() + r.getCosts()); //Actualizo cost de la sol (viaje + tiempo de servicio nodo)
-						if(LsSolution.getTotalCosts()<0) {
-							System.out.println("Stop");
-						}
+
 						LsSolution.getNotUsedNodes().remove(b.getvalue());	
 
 						if( (LsSolution.getTotalScore() > AuxSolLS.getTotalScore()) ||
 								( (LsSolution.getTotalScore() == AuxSolLS.getTotalScore()) && (LsSolution.getTotalCosts() < AuxSolLS.getTotalCosts()))){
-							AuxSolLS = new Solution(routecache.improve(LsSolution,inputs,scenario)); 
+							AuxSolLS = new Solution(routecache.improve(LsSolution,aTest,inputs,scenario)); 
 						}
 					}	
 				} 
@@ -611,15 +586,9 @@ public class VNS {
 
 			if ((AuxSolLS.getTotalScore() > BaseSol.getTotalScore()) ||
 					( (AuxSolLS.getTotalScore() == BaseSol.getTotalScore()) && (AuxSolLS.getTotalCosts() < BaseSol.getTotalCosts()))){
-				LsSolution = new Solution(routecache.improve(AuxSolLS,inputs,scenario)); 
-				BaseSol = new Solution(routecache.improve(LsSolution,inputs,scenario)); 
+				LsSolution = new Solution(routecache.improve(AuxSolLS,aTest,inputs,scenario)); 
+				BaseSol = new Solution(routecache.improve(LsSolution,aTest,inputs,scenario)); 
 			}else{improve = false;}
-		}
-
-		
-		AuxSolLS.sliceSolutionAndSetCost(inputs);
-		if(hasImproved(AuxSolLS)){
-			System.out.println("I improved LocalSearch4 " + AuxSolLS.getTotalScore()+ " "+AuxSolLS.getTotalCosts());
 		}
 		return AuxSolLS;
 	}
